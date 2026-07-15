@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5001';
+
 // ─── GLOBAL STYLES ───
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -239,7 +241,7 @@ function AnalyzePage({ setPage }) {
     if (!situation.trim()) { setError('Please describe your legal situation'); return; }
     setLoading(true); setError(''); setResult(null); setSaved(false);
     try {
-      const res = await axios.post('http://127.0.0.1:5001/analyze', { situation });
+      const res = await axios.post(`${API_BASE_URL}/analyze`, { situation });
       setResult(res.data);
       setActiveTab('laws');
       // Auto save to history
@@ -252,13 +254,13 @@ function AnalyzePage({ setPage }) {
         full_result: res.data
       });
       setSaved(true);
-    } catch { setError('Something went wrong. Please check if the backend is running on port 5001.'); }
+    } catch { setError('Something went wrong. Please check if the backend is running.'); }
     setLoading(false);
   };
 
   const download = async () => {
     try {
-      const res = await axios.post('http://127.0.0.1:5001/generate-document', {
+      const res = await axios.post(`${API_BASE_URL}/generate-document`, {
         complaint_letter: result.complaint_letter,
         language: result.detected_language
       });

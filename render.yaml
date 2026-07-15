@@ -1,0 +1,25 @@
+services:
+  # Flask Backend Web Service
+  - type: web
+    name: jurisai-backend
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --chdir backend app:app
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false # You will enter this key in the Render UI during setup
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+  # React Frontend Static Site
+  - type: static
+    name: jurisai-frontend
+    buildCommand: CI=false npm run build
+    publishPath: build
+    rootDir: frontend/jurisai-frontend
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+        fromService:
+          type: web
+          name: jurisai-backend
+          property: host
