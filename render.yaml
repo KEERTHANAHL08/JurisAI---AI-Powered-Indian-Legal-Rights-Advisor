@@ -3,6 +3,7 @@ services:
   - type: web
     name: jurisai-backend
     runtime: python
+    plan: free
     buildCommand: pip install -r backend/requirements.txt
     startCommand: gunicorn --chdir backend app:app
     envVars:
