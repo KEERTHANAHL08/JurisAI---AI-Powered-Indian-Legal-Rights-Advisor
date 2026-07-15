@@ -24,4 +24,4 @@ services:
         fromService:
           type: web
           name: jurisai-backend
-          property: url
+          property: host
