@@ -13,11 +13,10 @@ services:
         value: 3.10.0
 
   # React Frontend Static Site
-  - type: web
-    env: static
+  - type: static
     name: jurisai-frontend
     buildCommand: CI=false npm run build
-    staticPublishPath: build
+    publishPath: build
     rootDir: frontend/jurisai-frontend
     envVars:
       - key: REACT_APP_API_BASE_URL
