@@ -21,4 +21,4 @@ services:
     rootDir: frontend/jurisai-frontend
     envVars:
       - key: REACT_APP_API_BASE_URL
-        sync: true
+        sync: false
