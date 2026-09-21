@@ -89,11 +89,18 @@ def detect_language(text):
 
 # ── Translate to English ──
 def translate_to_english(text):
-    try:
-        translated = GoogleTranslator(source='auto', target='en').translate(text)
-        return translated
-    except:
-        return text
+    import time
+    for attempt in range(3):
+        try:
+            translated = GoogleTranslator(source='auto', target='en').translate(text)
+            if translated and translated.strip():
+                return translated
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(1 * (attempt + 1))  # backoff: 1s, 2s
+            else:
+                print(f"Translation failed after 3 attempts: {e}")
+    return text
 
 
 # ── ANALYZE ROUTE ──
@@ -111,6 +118,14 @@ def analyze():
 
         # Step 2: Translate to English for ML
         english_input = translate_to_english(user_input)
+
+        # Verify translation actually produced English text
+        # If non-English chars dominate, translation may have failed
+        non_latin = sum(1 for c in english_input if ord(c) > 127 and not c.isspace())
+        total_alpha = sum(1 for c in english_input if c.isalpha())
+        if total_alpha > 0 and non_latin / total_alpha > 0.5:
+            # Translation failed — use a keyword-based fallback
+            print(f"Warning: Translation may have failed. Non-latin ratio: {non_latin}/{total_alpha}")
 
         # Step 3: ML Model prediction
         predicted_law = model.predict([english_input])[0]
