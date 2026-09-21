@@ -90,16 +90,46 @@ def detect_language(text):
 # ── Translate to English ──
 def translate_to_english(text):
     import time
+    
+    # First, check if text is already English
+    non_latin = sum(1 for c in text if ord(c) > 127 and not c.isspace())
+    total_alpha = sum(1 for c in text if c.isalpha())
+    if total_alpha > 0 and non_latin / total_alpha < 0.1:
+        return text  # Already English, no translation needed
+    
+    # Try Google Translate first
     for attempt in range(3):
         try:
             translated = GoogleTranslator(source='auto', target='en').translate(text)
             if translated and translated.strip():
-                return translated
+                # Verify translation actually produced English
+                non_latin_out = sum(1 for c in translated if ord(c) > 127 and not c.isspace())
+                total_out = sum(1 for c in translated if c.isalpha())
+                if total_out > 0 and non_latin_out / total_out < 0.3:
+                    return translated
         except Exception as e:
             if attempt < 2:
-                time.sleep(1 * (attempt + 1))  # backoff: 1s, 2s
-            else:
-                print(f"Translation failed after 3 attempts: {e}")
+                time.sleep(1 * (attempt + 1))
+    
+    # Fallback: Use Groq LLM to translate
+    print("Google Translate failed. Using Groq LLM as fallback translator...")
+    try:
+        chat = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": f"Translate the following text to English. Return ONLY the English translation, nothing else:\n\n{text}"
+            }],
+            model="qwen/qwen3.8-27b",
+            temperature=0.1,
+            max_tokens=500
+        )
+        groq_translation = chat.choices[0].message.content.strip()
+        if groq_translation:
+            print(f"Groq translation: {groq_translation}")
+            return groq_translation
+    except Exception as e:
+        print(f"Groq translation also failed: {e}")
+    
     return text
 
 
@@ -198,7 +228,7 @@ IMPORTANT:
 - Return ONLY valid JSON, absolutely no text before or after the JSON."""
 
         # Step 6: Call Groq with Fallback Logic
-        models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+        models_to_try = ["qwen/qwen3.8-27b", "allam-2-7b"]
         response_text = None
         last_exception = None
         used_fallback = False
