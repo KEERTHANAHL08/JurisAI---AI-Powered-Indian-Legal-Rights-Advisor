@@ -113,23 +113,23 @@ def translate_to_english(text):
     
     # Fallback: Use Groq LLM to translate
     print("Google Translate failed. Using Groq LLM as fallback translator...")
-    try:
-        chat = client.chat.completions.create(
-            messages=[{
-                "role": "user",
-                "content": f"Translate the following text to English. Return ONLY the English translation, nothing else:\n\n{text}"
-            }],
-            model="qwen/qwen3.8-27b",
-            temperature=0.1,
-            max_tokens=500
-        )
-        groq_translation = chat.choices[0].message.content.strip()
-        if groq_translation:
-            print(f"Groq translation: {groq_translation}")
-            return groq_translation
-    except Exception as e:
-        print(f"Groq translation also failed: {e}")
-    
+    for model_name in ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]:
+        try:
+            chat = client.chat.completions.create(
+                messages=[{
+                    "role": "user",
+                    "content": f"Translate the following text to English. Return ONLY the English translation, nothing else:\n\n{text}"
+                }],
+                model=model_name,
+                temperature=0.1,
+                max_tokens=500
+            )
+            groq_translation = chat.choices[0].message.content.strip()
+            if groq_translation:
+                print(f"Groq translation ({model_name}): {groq_translation}")
+                return groq_translation
+        except Exception as e:
+            print(f"Groq translation ({model_name}) failed: {e}")
     return text
 
 
