@@ -178,10 +178,34 @@ def analyze():
         # Step 4: Language instruction for Groq (respond in user's language)
         if lang_name == 'kannada':
             response_lang = "Kannada (ಕನ್ನಡ)"
-            lang_instruction = "Respond entirely in clear, simple Kannada (ಕನ್ನಡ). All JSON field values (descriptions, rights, steps, letter) MUST be written in Kannada script. Only law names and case names can remain in English."
+            lang_instruction = """CRITICAL INSTRUCTION - RESPOND 100% ENTIRELY IN KANNADA:
+1. Every single explanation, right, action step, legal reasoning, case outcome, and especially the complaint letter MUST be written 100% in pure Kannada script (ಕನ್ನಡ).
+2. DO NOT include any English words or English placeholders anywhere in the Kannada text.
+3. For the complaint letter, use authentic formal Kannada letter structure:
+   - ದಿನಾಂಕ: [ದಿನಾಂಕ], ಸ್ಥಳ: [ಸ್ಥಳ]
+   - ಇವರಿಗೆ, [ಅಧಿಕಾರಿಯ ಹೆಸರು / ಹುದ್ದೆ], [ವಿಳಾಸ]
+   - ಇವರಿಂದ, [ದೂರುದಾರರ ಹೆಸರು], [ವಿಳಾಸ]
+   - ವಿಷಯ: [ದೂರಿನ ವಿಷಯ ಸ್ಪಷ್ಟವಾಗಿ]
+   - ಮಾನ್ಯರೇ,
+   - [ದೂರಿನ ವಿವರವಾದ ವಿವರಣೆ ಕನ್ನಡದಲ್ಲಿ]
+   - ಇಂತಿ ತಮ್ಮ ನಂಬಿಕಸ್ಥ, [ದೂರುದಾರರ ಸಹಿ / ಹೆಸರು]
+   Every single word in the complaint letter must be in Kannada. Absolutely NO English words like 'To', 'From', 'Subject', 'Respected Sir/Madam', 'Yours faithfully', etc.
+4. Only 'law_name' and 'case_name' can remain in English."""
         elif lang_name == 'hindi':
             response_lang = "Hindi (हिन्दी)"
-            lang_instruction = "Respond entirely in clear, simple Hindi (हिन्दी). All JSON field values (descriptions, rights, steps, letter) MUST be written in Hindi/Devanagari script. Only law names and case names can remain in English."
+            lang_instruction = """CRITICAL INSTRUCTION - RESPOND 100% ENTIRELY IN HINDI:
+1. Every single explanation, right, action step, legal reasoning, case outcome, and especially the complaint letter MUST be written 100% in pure Hindi (हिन्दी) in Devanagari script.
+2. DO NOT include any English words or English placeholders anywhere in the Hindi text.
+3. For the complaint letter, use authentic formal Hindi letter structure:
+   - दिनांक: [दिनांक], स्थान: [स्थान]
+   - सेवा में, [अधिकारी का पद / विभाग], [पता]
+   - प्रेषक: [शिकायतकर्ता का नाम], [पता]
+   - विषय: [शिकायत का विषय]
+   - महोदय / महोदया,
+   - [शिकायत का संपूर्ण विवरण हिन्दी में]
+   - भवदीय / भवदीया, [शिकायतकर्ता का नाम]
+   Every single word in the complaint letter must be in Hindi. Absolutely NO English words like 'To', 'From', 'Subject', 'Respected Sir/Madam', 'Yours faithfully', etc.
+4. Only 'law_name' and 'case_name' can remain in English."""
         else:
             response_lang = "English"
             lang_instruction = "Respond entirely in clear, simple English. All JSON field values must be in English."
@@ -225,21 +249,21 @@ ALL text values in the JSON MUST be in {response_lang} (except law_name and case
         }}
     ],
     "action_steps": [
-        "Step 1: Most immediate action to take in {response_lang}",
-        "Step 2: Next important step in {response_lang}",
-        "Step 3: Further legal recourse in {response_lang}",
-        "Step 4: Additional support available in {response_lang}"
+        "Step 1 in {response_lang}",
+        "Step 2 in {response_lang}",
+        "Step 3 in {response_lang}",
+        "Step 4 in {response_lang}"
     ],
-    "complaint_letter": "Write a complete, properly formatted formal complaint letter in {response_lang} with:\\n\\nTo,\\nThe [Authority Name]\\n[Address]\\n\\nSubject: [Subject Line]\\n\\nRespected Sir/Madam,\\n\\n[Opening paragraph explaining who the complainant is]\\n\\n[Second paragraph describing the problem in detail with dates and amounts]\\n\\n[Third paragraph stating which law is being violated]\\n\\n[Fourth paragraph stating what action is requested]\\n\\nYours faithfully,\\n[Complainant Name]\\nDate: \\nAddress: "
+    "complaint_letter": "A complete formal legal complaint letter written ENTIRELY in {response_lang}. Every word from the header, salutation, subject, body, to closing MUST be 100% in {response_lang}. Absolutely NO English words or English placeholders."
 }}
 
 IMPORTANT: 
 - The case_strength score must vary based on the strength of the case. A vague complaint should score 35-50. A clear violation with likely evidence should score 70-90.
 - Return ONLY valid JSON, absolutely no text before or after the JSON.
-- ALL descriptive text values MUST be in {response_lang}. This is critical."""
+- ALL descriptive text values and the complaint letter MUST be 100% in {response_lang}. This is critical."""
 
         # Step 6: Call Groq with Fallback Logic
-        models_to_try = ["qwen/qwen3.8-27b", "allam-2-7b"]
+        models_to_try = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
         response_text = None
         last_exception = None
         used_fallback = False
@@ -250,7 +274,7 @@ IMPORTANT:
                     messages=[{"role": "user", "content": prompt}],
                     model=model_name,
                     temperature=0.3,
-                    max_tokens=4000,
+                    max_tokens=2500,
                     response_format={"type": "json_object"}
                 )
                 temp_response = chat_completion.choices[0].message.content
@@ -417,8 +441,8 @@ IMPORTANT:
 
         analysis = json.loads(response_text)
         
-        # If language is not English, dynamically translate the JSON values
-        if lang_code != 'en':
+        # If language is not English and offline fallback was used, dynamically translate the JSON values
+        if used_fallback and lang_code != 'en':
             translator = GoogleTranslator(source='en', target=lang_code)
             def _translate_value(k, v):
                 if k in ['law_name', 'section', 'case_name', 'year', 'score']:
