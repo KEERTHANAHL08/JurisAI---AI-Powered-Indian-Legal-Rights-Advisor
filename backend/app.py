@@ -175,57 +175,68 @@ def analyze():
 
         display_confidence = min(display_confidence, 97.0)
 
-        # Step 4: Language instruction for Groq (LLM always generates in English)
-        lang_instruction = "Respond entirely in clear, simple English. All JSON field values must be in English."
+        # Step 4: Language instruction for Groq (respond in user's language)
+        if lang_name == 'kannada':
+            response_lang = "Kannada (ಕನ್ನಡ)"
+            lang_instruction = "Respond entirely in clear, simple Kannada (ಕನ್ನಡ). All JSON field values (descriptions, rights, steps, letter) MUST be written in Kannada script. Only law names and case names can remain in English."
+        elif lang_name == 'hindi':
+            response_lang = "Hindi (हिन्दी)"
+            lang_instruction = "Respond entirely in clear, simple Hindi (हिन्दी). All JSON field values (descriptions, rights, steps, letter) MUST be written in Hindi/Devanagari script. Only law names and case names can remain in English."
+        else:
+            response_lang = "English"
+            lang_instruction = "Respond entirely in clear, simple English. All JSON field values must be in English."
 
         # Step 5: Build prompt
         prompt = f"""You are an expert Indian legal advisor helping ordinary citizens understand their rights.
 
 {lang_instruction}
 
-Citizen's situation: {english_input}
+Citizen's situation (translated to English for reference): {english_input}
+Original input language: {lang_name}
 Law domain identified by ML model: {predicted_law}
 
-Analyze this situation and provide a comprehensive legal analysis in this EXACT JSON format:
+Analyze this situation and provide a comprehensive legal analysis in this EXACT JSON format.
+ALL text values in the JSON MUST be in {response_lang} (except law_name and case_name which can be in English):
 {{
     "applicable_laws": [
         {{
-            "law_name": "Full name of the law in English",
+            "law_name": "Full name of the law (can be in English)",
             "section": "Specific section or article number",
-            "description": "What this law says in simple words in English",
-            "how_it_helps": "How this law specifically protects the user in English"
+            "description": "What this law says in simple words in {response_lang}",
+            "how_it_helps": "How this law specifically protects the user in {response_lang}"
         }}
     ],
     "your_rights": [
-        "Clear right number 1 in English",
-        "Clear right number 2 in English",
-        "Clear right number 3 in English"
+        "Clear right number 1 in {response_lang}",
+        "Clear right number 2 in {response_lang}",
+        "Clear right number 3 in {response_lang}"
     ],
     "case_strength": {{
         "score": <give a realistic score between 30-95 based on how clear the legal violation is, how much evidence likely exists, and how specific the complaint is>,
-        "assessment": "<Strong/Moderate/Weak in English>",
-        "reasoning": "Specific reason why this case is strong or weak based on the actual facts described in English"
+        "assessment": "<Strong/Moderate/Weak - write this word in {response_lang}>",
+        "reasoning": "Specific reason why this case is strong or weak in {response_lang}"
     }},
     "similar_cases": [
         {{
-            "case_name": "Real Indian court case name in English",
+            "case_name": "Real Indian court case name (can be in English)",
             "year": "Year of judgment",
-            "outcome": "What the court decided in English",
-            "relevance": "How this case helps the user's situation in English"
+            "outcome": "What the court decided in {response_lang}",
+            "relevance": "How this case helps the user's situation in {response_lang}"
         }}
     ],
     "action_steps": [
-        "Step 1: Most immediate action to take in English",
-        "Step 2: Next important step in English",
-        "Step 3: Further legal recourse in English",
-        "Step 4: Additional support available in English"
+        "Step 1: Most immediate action to take in {response_lang}",
+        "Step 2: Next important step in {response_lang}",
+        "Step 3: Further legal recourse in {response_lang}",
+        "Step 4: Additional support available in {response_lang}"
     ],
-    "complaint_letter": "Write a complete, properly formatted formal complaint letter in English with:\\n\\nTo,\\nThe [Authority Name]\\n[Address]\\n\\nSubject: [Subject Line]\\n\\nRespected Sir/Madam,\\n\\n[Opening paragraph explaining who the complainant is]\\n\\n[Second paragraph describing the problem in detail with dates and amounts]\\n\\n[Third paragraph stating which law is being violated]\\n\\n[Fourth paragraph stating what action is requested]\\n\\nYours faithfully,\\n[Complainant Name]\\nDate: \\nAddress: "
+    "complaint_letter": "Write a complete, properly formatted formal complaint letter in {response_lang} with:\\n\\nTo,\\nThe [Authority Name]\\n[Address]\\n\\nSubject: [Subject Line]\\n\\nRespected Sir/Madam,\\n\\n[Opening paragraph explaining who the complainant is]\\n\\n[Second paragraph describing the problem in detail with dates and amounts]\\n\\n[Third paragraph stating which law is being violated]\\n\\n[Fourth paragraph stating what action is requested]\\n\\nYours faithfully,\\n[Complainant Name]\\nDate: \\nAddress: "
 }}
 
 IMPORTANT: 
 - The case_strength score must vary based on the strength of the case. A vague complaint should score 35-50. A clear violation with likely evidence should score 70-90.
-- Return ONLY valid JSON, absolutely no text before or after the JSON."""
+- Return ONLY valid JSON, absolutely no text before or after the JSON.
+- ALL descriptive text values MUST be in {response_lang}. This is critical."""
 
         # Step 6: Call Groq with Fallback Logic
         models_to_try = ["qwen/qwen3.8-27b", "allam-2-7b"]
