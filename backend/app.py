@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings('ignore')
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
@@ -13,12 +15,24 @@ import io
 import base64
 import os
 import json
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+except ImportError:
+    pass
 
 app = Flask(__name__)
 CORS(app)
 
 # Initialize Groq client
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+api_key = os.environ.get("GROQ_API_KEY")
+if not api_key:
+    raise ValueError(
+        "GROQ_API_KEY is not set. Please add it to your .env file or export it in your environment."
+    )
+client = Groq(api_key=api_key)
 
 # ── Train ML model on startup ──
 def train_model():
